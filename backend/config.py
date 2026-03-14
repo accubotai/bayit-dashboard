@@ -6,13 +6,13 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Application settings with validation."""
 
-    database_url: str = "postgresql://user:password@localhost:5432/richmond_land"
+    database_url: str  # Required — must be set via .env or environment
     environment: str = "development"
     log_level: str = "INFO"
     cors_origins: str = "http://localhost:5173"
     api_host: str = "0.0.0.0"
     api_port: int = 8000
-    mapbox_access_token: str = ""
+    mapbox_access_token: str  # Required — must be set via .env or environment
 
     # Richmond bounding box for input validation
     richmond_min_lng: float = -123.30
