@@ -5,12 +5,12 @@ from __future__ import annotations
 import os
 
 # BC Data Catalogue — ParcelMap BC (WFS, public, OGL-BC license)
-# Contains all parcels in BC with PID, owner_type, area
 BC_PARCELS_WFS_URL = os.getenv(
     "BC_PARCELS_WFS_URL",
     "https://openmaps.gov.bc.ca/geo/pub/ows",
 )
 BC_PARCELS_LAYER = "pub:WHSE_CADASTRE.PMBC_PARCEL_FABRIC_POLY_SVW"
+RICHMOND_MUNICIPALITY = "Richmond, City of"
 
 # BC Data Catalogue — ALR boundary (WFS)
 ALR_WFS_URL = os.getenv(
@@ -34,13 +34,17 @@ DATABASE_URL = os.getenv(
     ),
 )
 
-# Richmond bounding box for spatial filters (EPSG:4326)
+# Richmond bounding box (EPSG:4326) — covers full City of Richmond
 RICHMOND_BBOX = {
     "xmin": -123.30,
-    "ymin": 49.10,
+    "ymin": 49.08,
     "xmax": -123.00,
-    "ymax": 49.22,
+    "ymax": 49.23,
 }
 
-# WFS pagination
-WFS_PAGE_SIZE = 1000
+# WFS fetch limit per request (BC WFS caps at 10,000)
+WFS_MAX_FEATURES = 10000
+
+# Grid subdivision for fetching all parcels (cols x rows tiles)
+WFS_GRID_COLS = 6
+WFS_GRID_ROWS = 3

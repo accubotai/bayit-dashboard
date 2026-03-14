@@ -60,6 +60,8 @@ async def get_parcels(
     limit: int = Query(500, ge=1, le=2000),
     owner_type: str | None = Query(None, description="Filter by owner type"),
     exclude_alr: bool = Query(False, description="Exclude ALR parcels"),
+    hide_private: bool = Query(False, description="Hide private parcels without listings"),
+    min_lot_area: float | None = Query(None, ge=0, description="Minimum lot area in m²"),
 ) -> ParcelCollection:
     """Return enriched parcels within a bounding box as GeoJSON FeatureCollection."""
     parts = bbox.split(",")
@@ -70,10 +72,22 @@ async def get_parcels(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+    params = {
+        "min_lng": min_lng,
+        "min_lat": min_lat,
+        "max_lng": max_lng,
+        "max_lat": max_lat,
+        "limit": limit,
+        "owner_type": owner_type,
+        "exclude_alr": exclude_alr,
+        "hide_private": hide_private,
+        "min_lot_area": min_lot_area,
+    }
+
     if use_rest():
-        rows = await _fetch_via_rest(min_lng, min_lat, max_lng, max_lat, limit, owner_type, exclude_alr)
+        rows = await _fetch_via_rest(params)
     else:
-        rows = await _fetch_via_asyncpg(min_lng, min_lat, max_lng, max_lat, limit, owner_type, exclude_alr)
+        rows = await _fetch_via_asyncpg(params)
 
     features = [_row_to_feature(row) for row in rows]
     total_count = int(rows[0]["total_count"]) if rows else 0
@@ -81,24 +95,18 @@ async def get_parcels(
     return ParcelCollection(type="FeatureCollection", features=features, total_count=total_count)
 
 
-async def _fetch_via_rest(
-    min_lng: float,
-    min_lat: float,
-    max_lng: float,
-    max_lat: float,
-    limit: int,
-    owner_type: str | None,
-    exclude_alr: bool,
-) -> list[dict]:
+async def _fetch_via_rest(params: dict) -> list[dict]:
     """Fetch parcels via Supabase RPC (PostgREST)."""
     rpc_params = {
-        "min_lng": min_lng,
-        "min_lat": min_lat,
-        "max_lng": max_lng,
-        "max_lat": max_lat,
-        "p_limit": limit,
-        "p_owner_type": owner_type,
-        "p_exclude_alr": exclude_alr,
+        "min_lng": params["min_lng"],
+        "min_lat": params["min_lat"],
+        "max_lng": params["max_lng"],
+        "max_lat": params["max_lat"],
+        "p_limit": params["limit"],
+        "p_owner_type": params["owner_type"],
+        "p_exclude_alr": params["exclude_alr"],
+        "p_hide_private": params["hide_private"],
+        "p_min_lot_area": params["min_lot_area"],
     }
     headers = {
         "apikey": SUPABASE_KEY,
@@ -118,25 +126,19 @@ async def _fetch_via_rest(
         return resp.json()
 
 
-async def _fetch_via_asyncpg(
-    min_lng: float,
-    min_lat: float,
-    max_lng: float,
-    max_lat: float,
-    limit: int,
-    owner_type: str | None,
-    exclude_alr: bool,
-) -> list[dict]:
+async def _fetch_via_asyncpg(params: dict) -> list[dict]:
     """Fetch parcels via asyncpg (local dev)."""
     pool = await get_pool()
     rows = await pool.fetch(
-        "SELECT * FROM get_parcels_in_bbox($1, $2, $3, $4, $5, $6, $7)",
-        min_lng,
-        min_lat,
-        max_lng,
-        max_lat,
-        limit,
-        owner_type,
-        exclude_alr,
+        "SELECT * FROM get_parcels_in_bbox($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        params["min_lng"],
+        params["min_lat"],
+        params["max_lng"],
+        params["max_lat"],
+        params["limit"],
+        params["owner_type"],
+        params["exclude_alr"],
+        params["hide_private"],
+        params["min_lot_area"],
     )
     return [dict(row) for row in rows]

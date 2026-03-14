@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
 
-// Center on the area where we have parcel data (eastern Richmond)
+// Central Richmond — No. 3 Road corridor, Brighouse area
 const INITIAL_VIEW = {
-  longitude: -123.03,
-  latitude: 49.207,
+  longitude: -123.137,
+  latitude: 49.166,
   zoom: 14,
 };
 
