@@ -64,15 +64,22 @@ test(frontend): add FilterPanel component tests
 ci(infra): add PostGIS service to test workflow
 ```
 
-### 5. Pre-Commit Checks
+### 5. Environment Setup (uv)
+
+This project uses `uv` as its Python package manager, `ruff` for linting/formatting, and `ty` for type checking.
 
 ```bash
-# One-time setup
-pip install pre-commit
-pre-commit install
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install all dependencies (from pyproject.toml)
+uv sync --dev
+
+# Run pre-commit hooks (one-time setup)
+uv run pre-commit install
 
 # Run manually
-pre-commit run --all-files
+uv run pre-commit run --all-files
 ```
 
 ### 6. Create a Pull Request
@@ -106,10 +113,19 @@ EOF
 These gates must ALL pass before merge:
 1. **Commit Lint** — conventional commit format
 2. **Security Scan** — no secrets, no vulnerable patterns
-3. **Backend Quality** — ruff lint, ruff format, mypy, pytest
+3. **Backend Quality** — ruff lint, ruff format, ty check, pytest (via uv)
 4. **Frontend Quality** — eslint, tsc, vitest
 5. **Data Integrity** — SRID consistency, outSR validation
 6. **PR Format** — title format, body completeness
+7. **Gemini Code Assist Review** — automated AI code review
+
+### 9. Respond to PR Review Comments
+
+**Gemini Code Assist** automatically reviews every PR. Before merge:
+- All review conversations must be **resolved**
+- Every review comment must receive a **one-line reply** describing what was done to address it
+- If a comment is dismissed, reply with the reason for dismissal
+- No PR may be merged with unresolved review threads (enforced by GitHub branch protection)
 
 ### 8. Clean Up Worktree After Merge
 
@@ -121,11 +137,14 @@ git branch -d frontend/map-component
 ## Quality Standards
 
 ### Python (Backend & Pipeline)
+- **Use `uv` for everything** — `uv sync`, `uv add`, `uv run`
+- **Lint/format with `ruff`** — `uv run ruff check`, `uv run ruff format`
+- **Type check with `ty`** — `uv run ty check`
 - Type annotations on all functions
 - Pydantic models for all API request/response schemas
 - `async`/`await` for all database operations
 - Parameterized SQL queries only — NO f-strings in SQL
-- Tests with pytest + pytest-asyncio
+- Tests with pytest + pytest-asyncio (`uv run pytest`)
 
 ### JavaScript/TypeScript (Frontend)
 - React functional components with hooks

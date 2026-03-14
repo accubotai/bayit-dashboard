@@ -15,21 +15,34 @@
 - Commits MUST include Co-Authored-By trailer
 - No secrets, credentials, API keys, or .env files may be committed
 
+### Python Toolchain
+- **Package manager**: `uv` — use `uv sync` to install, `uv add` to add deps, `uv run` to execute
+- **Linter/formatter**: `ruff` — configured in `pyproject.toml`
+- **Type checker**: `ty` — configured in `pyproject.toml`
+- **Never use pip, mypy, or virtualenv directly** — always go through `uv`
+
 ### Code Quality Gates (must pass before PR merge)
-- Python: `ruff check` and `ruff format --check` must pass
-- Python: `mypy --strict` on new code (type annotations required)
+- Python: `uv run ruff check` and `uv run ruff format --check` must pass
+- Python: `uv run ty check` on all backend code (type annotations required)
 - JavaScript/TypeScript: `eslint` must pass
-- All new code must have tests (pytest for Python, vitest for frontend)
+- All new code must have tests (`uv run pytest` for Python, vitest for frontend)
 - No `# type: ignore` without an explanatory comment
 - No `eslint-disable` without an explanatory comment
 - No TODO/FIXME without a linked GitHub issue number
+
+### PR Review Policy (ENFORCED by GitHub branch protection)
+- **Gemini Code Assist** automatically reviews every PR
+- All CI checks must pass before merge
+- All review conversations must be resolved before merge
+- Every review comment must receive a one-line reply describing what was done to address it, or why it was dismissed
+- No PR may be merged with unresolved review threads
 
 ### Security
 - All SQL queries MUST use parameterized queries — NO string interpolation
 - All user input MUST be validated with Pydantic models (backend) or zod (frontend)
 - All API endpoints MUST validate bbox within Richmond bounds: lng [-123.30, -123.00], lat [49.10, 49.22]
 - CORS must be configured explicitly — never `allow_origins=["*"]` in production
-- Dependencies must be pinned to exact versions
+- Dependencies managed via `uv` and pinned in `uv.lock`
 
 ### Data Integrity
 - All geometry MUST be EPSG:4326 (WGS84) — verify with ST_SRID() checks
