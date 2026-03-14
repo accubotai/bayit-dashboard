@@ -69,21 +69,46 @@ export function FilterPanel({ filters, updateFilter, resetFilters, totalCount }:
         </label>
       </div>
 
-      {/* Minimum lot area */}
+      {/* Exclude Parks */}
+      <div className="mb-2.5">
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={filters.exclude_parks !== false}
+            onChange={(e) => updateFilter('exclude_parks', e.target.checked)}
+            className="rounded"
+          />
+          Exclude public parks
+          <InfoBubble text="Excludes parcels that overlap with public parks (sourced from OpenStreetMap). Park land is designated for recreational use and is generally not available for development or lease for non-park purposes." />
+        </label>
+      </div>
+
+      {/* Lot area range */}
       <div className="mb-2.5">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Minimum lot area (m²)
-          <InfoBubble text="A synagogue typically needs at least 1,000–2,000 m² for the building, parking, accessible entrance, and outdoor space. Smaller lots may work for a smaller shul without parking." />
+          Lot area range (m²)
+          <InfoBubble text="A synagogue typically needs 1,000–5,000 m² for the building, parking, accessible entrance, and outdoor space. Very large parcels (50,000+ m²) are usually parks or infrastructure, not buildable sites." />
         </label>
-        <input
-          type="number"
-          min={0}
-          step={100}
-          value={filters.min_lot_area ?? 1000}
-          onChange={(e) => updateFilter('min_lot_area', e.target.value ? Number(e.target.value) : undefined)}
-          className="w-full text-sm border border-gray-300 rounded px-2 py-1.5"
-          placeholder="e.g. 1000"
-        />
+        <div className="flex gap-2">
+          <input
+            type="number"
+            min={0}
+            step={100}
+            value={filters.min_lot_area ?? ''}
+            onChange={(e) => updateFilter('min_lot_area', e.target.value ? Number(e.target.value) : undefined)}
+            className="w-1/2 text-sm border border-gray-300 rounded px-2 py-1.5"
+            placeholder="Min"
+          />
+          <input
+            type="number"
+            min={0}
+            step={1000}
+            value={filters.max_lot_area ?? ''}
+            onChange={(e) => updateFilter('max_lot_area', e.target.value ? Number(e.target.value) : undefined)}
+            className="w-1/2 text-sm border border-gray-300 rounded px-2 py-1.5"
+            placeholder="Max"
+          />
+        </div>
       </div>
 
       {/* Owner Type */}
