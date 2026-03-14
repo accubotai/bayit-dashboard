@@ -1,11 +1,11 @@
 import { useState, useCallback, useRef } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
 
-// Central Richmond default view
+// Center on the area where we have parcel data (eastern Richmond)
 const INITIAL_VIEW = {
-  longitude: -123.135,
-  latitude: 49.165,
-  zoom: 13,
+  longitude: -123.03,
+  latitude: 49.207,
+  zoom: 14,
 };
 
 export function useMapViewport() {

@@ -8,9 +8,9 @@ from pydantic_settings import BaseSettings
 # Richmond BC bounding box — all API bbox queries must fall within these bounds
 RICHMOND_BOUNDS = {
     "min_lng": -123.30,
-    "max_lng": -123.00,
+    "max_lng": -122.90,
     "min_lat": 49.10,
-    "max_lat": 49.22,
+    "max_lat": 49.30,
 }
 
 

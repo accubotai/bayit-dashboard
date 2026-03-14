@@ -42,19 +42,32 @@ export interface Filters {
   exclude_alr?: boolean;
 }
 
+// Clamp bbox to Richmond bounds so the API doesn't reject it
+function clampBbox(bbox: [number, number, number, number]): [number, number, number, number] {
+  return [
+    Math.max(bbox[0], -123.30),
+    Math.max(bbox[1], 49.10),
+    Math.min(bbox[2], -122.90),
+    Math.min(bbox[3], 49.30),
+  ];
+}
+
 export async function fetchParcels(
   bbox: [number, number, number, number],
   limit: number = 500,
   filters: Filters = {},
 ): Promise<ParcelCollection> {
+  const clamped = clampBbox(bbox);
+  // Skip if clamped bbox is invalid (completely outside Richmond)
+  if (clamped[0] >= clamped[2] || clamped[1] >= clamped[3]) {
+    return { type: 'FeatureCollection', features: [], total_count: 0 };
+  }
   const params = new URLSearchParams({
-    bbox: bbox.join(','),
+    bbox: clamped.join(','),
     limit: String(limit),
   });
 
   if (filters.owner_type) params.set('owner_type', filters.owner_type);
-  if (filters.permits_assembly !== undefined) params.set('permits_assembly', String(filters.permits_assembly));
-  if (filters.no_building !== undefined) params.set('no_building', String(filters.no_building));
   if (filters.exclude_alr) params.set('exclude_alr', 'true');
 
   const res = await fetch(`${API_BASE}/api/parcels?${params}`);
