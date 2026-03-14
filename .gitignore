@@ -63,3 +63,7 @@ docker-compose.override.yml
 
 # Worktrees (agent isolation)
 .worktrees/
+
+# Vercel
+.vercel/
+api/__pycache__/
