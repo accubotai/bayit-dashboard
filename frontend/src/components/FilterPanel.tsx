@@ -69,17 +69,17 @@ export function FilterPanel({ filters, updateFilter, resetFilters, totalCount }:
         </label>
       </div>
 
-      {/* Exclude Parks */}
+      {/* Exclude Unusable Land */}
       <div className="mb-2.5">
         <label className="flex items-center gap-2 text-sm text-gray-700">
           <input
             type="checkbox"
-            checked={filters.exclude_parks !== false}
-            onChange={(e) => updateFilter('exclude_parks', e.target.checked)}
+            checked={filters.exclude_unusable !== false}
+            onChange={(e) => updateFilter('exclude_unusable', e.target.checked)}
             className="rounded"
           />
-          Exclude public parks
-          <InfoBubble text="Excludes parcels that overlap with public parks (sourced from OpenStreetMap). Park land is designated for recreational use and is generally not available for development or lease for non-park purposes." />
+          Exclude unusable land
+          <InfoBubble text="Filters out land that cannot realistically be developed: public parks, schools, hospitals, cemeteries, existing places of worship, sports facilities, community centres, Crown Agency properties (BC Housing, health authorities, transit), and road rights-of-way. Data sourced from OpenStreetMap and ParcelMap BC." />
         </label>
       </div>
 

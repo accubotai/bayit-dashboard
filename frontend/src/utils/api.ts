@@ -41,7 +41,7 @@ export interface Filters {
   hide_private?: boolean;
   min_lot_area?: number;
   max_lot_area?: number;
-  exclude_parks?: boolean;
+  exclude_unusable?: boolean;
 }
 
 // Clamp bbox to Richmond bounds so the API doesn't reject it
@@ -73,7 +73,7 @@ export async function fetchParcels(
   if (filters.hide_private) params.set('hide_private', 'true');
   if (filters.min_lot_area) params.set('min_lot_area', String(filters.min_lot_area));
   if (filters.max_lot_area) params.set('max_lot_area', String(filters.max_lot_area));
-  if (filters.exclude_parks) params.set('exclude_parks', 'true');
+  if (filters.exclude_unusable) params.set('exclude_parks', 'true');
 
   const res = await fetch(`${API_BASE}/api/parcels?${params}`);
   if (!res.ok) throw new Error(`API error: ${res.status}`);
