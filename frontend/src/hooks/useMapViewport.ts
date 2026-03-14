@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import type { MapRef } from 'react-map-gl/mapbox';
+import type { MapRef } from 'react-map-gl/maplibre';
 
 // Central Richmond default view
 const INITIAL_VIEW = {

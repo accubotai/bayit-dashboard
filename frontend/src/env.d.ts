@@ -1,10 +1,17 @@
 /// <reference types="vite/client" />
 
-declare module 'react-map-gl/mapbox' {
+declare module 'react-map-gl/maplibre' {
   import type { ComponentType, RefObject } from 'react';
 
   export interface MapRef {
-    getMap(): mapboxgl.Map;
+    getMap(): {
+      getBounds(): {
+        getWest(): number;
+        getSouth(): number;
+        getEast(): number;
+        getNorth(): number;
+      } | undefined;
+    };
   }
 
   export interface ViewState {
@@ -13,7 +20,6 @@ declare module 'react-map-gl/mapbox' {
     zoom: number;
     pitch?: number;
     bearing?: number;
-    padding?: { top: number; bottom: number; left: number; right: number };
   }
 
   export interface MapLayerMouseEvent {
@@ -31,7 +37,6 @@ declare module 'react-map-gl/mapbox' {
     onMoveEnd?: () => void;
     onClick?: (e: MapLayerMouseEvent) => void;
     interactiveLayerIds?: string[];
-    mapboxAccessToken?: string;
     mapStyle?: string;
     style?: Record<string, string>;
     children?: React.ReactNode;
@@ -53,16 +58,4 @@ declare module 'react-map-gl/mapbox' {
   }>;
 }
 
-declare module 'mapbox-gl/dist/mapbox-gl.css';
-
-declare namespace mapboxgl {
-  interface Map {
-    getBounds(): LngLatBounds | undefined;
-  }
-  interface LngLatBounds {
-    getWest(): number;
-    getSouth(): number;
-    getEast(): number;
-    getNorth(): number;
-  }
-}
+declare module 'maplibre-gl/dist/maplibre-gl.css';
