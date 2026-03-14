@@ -9,14 +9,16 @@ Before starting ANY task, every agent must complete this checklist.
 - [ ] Confirm branch follows naming convention: `{prefix}/{description}`
 - [ ] Confirm you are in an isolated worktree (NOT on main)
 - [ ] Confirm changes are within your directory scope
+- [ ] Run `uv sync --dev` to install dependencies
 
 ## Before Committing
 
-- [ ] Pre-commit hooks pass: `pre-commit run --all-files`
-- [ ] Python: `ruff check backend/` passes
-- [ ] Python: `ruff format --check backend/` passes
+- [ ] Pre-commit hooks pass: `uv run pre-commit run --all-files`
+- [ ] Python: `uv run ruff check backend/` passes
+- [ ] Python: `uv run ruff format --check backend/` passes
+- [ ] Python: `uv run ty check backend/` passes
 - [ ] Frontend: `npx eslint src/` passes (if applicable)
-- [ ] Tests pass: `pytest` / `vitest run`
+- [ ] Tests pass: `uv run pytest` / `npx vitest run`
 - [ ] No secrets in code
 - [ ] No SQL string interpolation
 - [ ] All geometry uses SRID 4326
@@ -29,6 +31,13 @@ Before starting ANY task, every agent must complete this checklist.
 - [ ] Phase and Task referenced
 - [ ] Test evidence included
 - [ ] Breaking changes documented
+
+## After PR Review (Gemini Code Assist + human)
+
+- [ ] Every review comment has a one-line reply describing the action taken
+- [ ] Dismissed comments have a reply explaining why
+- [ ] All review conversations are resolved
+- [ ] All CI checks are green
 
 ## After PR Merged
 

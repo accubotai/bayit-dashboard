@@ -21,7 +21,6 @@ jobs:
         run: |
           COMMITS=$(git log --format='%s' origin/main..HEAD)
           PATTERN='^(feat|fix|refactor|test|docs|ci|chore|perf|security)\((frontend|backend|pipeline|db|infra|ci|docs)\): .+'
-          FAILED=0
           echo "$COMMITS" | while IFS= read -r msg; do
             if [ -n "$msg" ] && ! echo "$msg" | grep -qE "$PATTERN"; then
               echo "::error::Invalid commit message: '$msg'"
@@ -59,43 +58,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Check for backend changes
         id: changes
         run: |
-          if git diff --name-only origin/main...HEAD | grep -qE '^(backend/|sql/)'; then
+          if git diff --name-only origin/main...HEAD | grep -qE '^(backend/|sql/|pyproject\.toml)'; then
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: Install tools
+      - name: Install dependencies
         if: steps.changes.outputs.has_changes == 'true'
-        run: pip install ruff mypy pytest pytest-asyncio
-      - name: Install backend deps
-        if: steps.changes.outputs.has_changes == 'true'
-        run: |
-          if [ -f backend/requirements.txt ]; then
-            pip install -r backend/requirements.txt
-          fi
-          if [ -f backend/requirements-dev.txt ]; then
-            pip install -r backend/requirements-dev.txt
-          fi
+        run: uv sync --dev
       - name: Ruff lint
         if: steps.changes.outputs.has_changes == 'true'
-        run: ruff check backend/ --output-format=github
+        run: uv run ruff check backend/ --output-format=github
       - name: Ruff format
         if: steps.changes.outputs.has_changes == 'true'
-        run: ruff format --check backend/
-      - name: Type check
+        run: uv run ruff format --check backend/
+      - name: Type check (ty)
         if: steps.changes.outputs.has_changes == 'true'
-        run: mypy backend/ --ignore-missing-imports --no-error-summary || true
+        run: uv run ty check backend/
       - name: Run tests
         if: steps.changes.outputs.has_changes == 'true'
         run: |
           if [ -d backend/tests ] && [ "$(ls -A backend/tests/*.py 2>/dev/null)" ]; then
-            cd backend && python -m pytest tests/ -v
+            uv run pytest backend/tests/ -v
           else
             echo "No backend tests yet — skipping"
           fi

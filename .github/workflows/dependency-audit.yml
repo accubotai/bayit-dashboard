@@ -11,17 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Audit
         run: |
-          pip install pip-audit
-          if [ -f backend/requirements.txt ]; then
-            pip-audit -r backend/requirements.txt
-          else
-            echo "No requirements.txt yet"
-          fi
+          uv sync --dev
+          uv run pip-audit
 
   node-audit:
     name: Node Dependency Audit
