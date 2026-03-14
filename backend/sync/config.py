@@ -46,5 +46,6 @@ RICHMOND_BBOX = {
 WFS_MAX_FEATURES = 10000
 
 # Grid subdivision for fetching all parcels (cols x rows tiles)
-WFS_GRID_COLS = 6
-WFS_GRID_ROWS = 3
+# 10x5 = 50 tiles ensures no single tile exceeds the 10k WFS cap
+WFS_GRID_COLS = 10
+WFS_GRID_ROWS = 5

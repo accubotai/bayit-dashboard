@@ -9,6 +9,7 @@ Strategy:
 
 from __future__ import annotations
 
+import os
 import time
 
 import requests
@@ -54,7 +55,16 @@ def _fetch_tile(
         "CQL_FILTER": tile_cql,
     }
 
-    resp = requests.get(BC_PARCELS_WFS_URL, params=params, timeout=300)
+    # Route through Tor SOCKS proxy if configured
+    proxies = None
+    tor_port = os.getenv("TOR_SOCKS_PORT", "")
+    if tor_port:
+        proxies = {
+            "http": f"socks5h://127.0.0.1:{tor_port}",
+            "https": f"socks5h://127.0.0.1:{tor_port}",
+        }
+
+    resp = requests.get(BC_PARCELS_WFS_URL, params=params, timeout=300, proxies=proxies)
     resp.raise_for_status()
     data = resp.json()
     return data.get("features", [])
