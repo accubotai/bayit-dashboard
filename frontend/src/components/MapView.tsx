@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import Map, { Source, Layer, Popup } from 'react-map-gl/mapbox';
-import type { MapLayerMouseEvent } from 'react-map-gl/mapbox';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import Map, { Source, Layer, Popup } from 'react-map-gl/maplibre';
+import type { MapLayerMouseEvent } from 'react-map-gl/maplibre';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useParcels } from '../hooks/useParcels';
 import { useFilters } from '../hooks/useFilters';
@@ -11,18 +11,19 @@ import { DetailPanel } from './DetailPanel';
 import { ParcelPopup } from './ParcelPopup';
 import type { ParcelProperties, GeoJSONFeature } from '../utils/api';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
+// Free satellite+streets style from Esri (no API key required)
+const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
 
-// Color parcels by type — Mapbox style expression
+// Color parcels by type — MapLibre style expression
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const parcelFillColor: any = [
   'case',
-  // Municipal vacant = green
-  ['all', ['==', ['get', 'owner_type'], 'Municipal'], ['==', ['get', 'no_building'], true]],
-  '#22c55e',
-  // Municipal with building = blue
+  // Municipal = blue
   ['==', ['get', 'owner_type'], 'Municipal'],
   '#3b82f6',
+  // Crown Provincial = purple
+  ['==', ['get', 'owner_type'], 'Crown Provincial'],
+  '#8b5cf6',
   // For sale = orange
   ['!=', ['get', 'mls_number'], null],
   '#f97316',
@@ -67,8 +68,7 @@ export function MapView() {
         onMoveEnd={onMoveEnd}
         onClick={onClick}
         interactiveLayerIds={['parcels-fill']}
-        mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/satellite-streets-v12"
+        mapStyle={MAP_STYLE}
         style={{ width: '100%', height: '100%' }}
       >
         <Source id="parcels" type="geojson" data={geojson}>
