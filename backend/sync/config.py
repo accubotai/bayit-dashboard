@@ -4,29 +4,20 @@ from __future__ import annotations
 
 import os
 
-# Richmond GeoHub ArcGIS REST API endpoints
-# Find the actual FeatureServer URL by going to the GeoHub dataset page,
-# clicking "I want to use this" → "View API resources" → copy FeatureServer URL.
-GEOHUB_PARCELS_URL = os.getenv(
-    "GEOHUB_PARCELS_URL",
-    "https://services2.arcgis.com/DBVMRhKBTxLSFj6u/arcgis/rest/services/Parcels/FeatureServer/0/query",
+# BC Data Catalogue — ParcelMap BC (WFS, public, OGL-BC license)
+# Contains all parcels in BC with PID, owner_type, area
+BC_PARCELS_WFS_URL = os.getenv(
+    "BC_PARCELS_WFS_URL",
+    "https://openmaps.gov.bc.ca/geo/pub/ows",
 )
-
-GEOHUB_ZONING_URL = os.getenv(
-    "GEOHUB_ZONING_URL",
-    "https://services2.arcgis.com/DBVMRhKBTxLSFj6u/arcgis/rest/services/Zoning_Districts/FeatureServer/0/query",
-)
-
-GEOHUB_BUILDINGS_URL = os.getenv(
-    "GEOHUB_BUILDINGS_URL",
-    "https://services2.arcgis.com/DBVMRhKBTxLSFj6u/arcgis/rest/services/Building_Footprints/FeatureServer/0/query",
-)
+BC_PARCELS_LAYER = "pub:WHSE_CADASTRE.PMBC_PARCEL_FABRIC_POLY_SVW"
 
 # BC Data Catalogue — ALR boundary (WFS)
 ALR_WFS_URL = os.getenv(
     "ALR_WFS_URL",
     "https://openmaps.gov.bc.ca/geo/pub/ows",
 )
+ALR_LAYER = "pub:WHSE_LEGAL_ADMIN_BOUNDARIES.OATS_ALR_POLYS"
 
 # TransLink GTFS static feed
 TRANSLINK_GTFS_URL = os.getenv(
@@ -43,7 +34,7 @@ DATABASE_URL = os.getenv(
     ),
 )
 
-# Richmond bounding box for spatial filters
+# Richmond bounding box for spatial filters (EPSG:4326)
 RICHMOND_BBOX = {
     "xmin": -123.30,
     "ymin": 49.10,
@@ -51,5 +42,5 @@ RICHMOND_BBOX = {
     "ymax": 49.22,
 }
 
-# ArcGIS pagination
-ARCGIS_PAGE_SIZE = 1000
+# WFS pagination
+WFS_PAGE_SIZE = 1000

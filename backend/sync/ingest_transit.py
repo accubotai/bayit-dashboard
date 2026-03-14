@@ -7,6 +7,7 @@ import io
 import zipfile
 
 import requests
+
 from backend.sync.config import DATABASE_URL, RICHMOND_BBOX, TRANSLINK_GTFS_URL
 from backend.sync.utils import get_db_connection
 
@@ -95,7 +96,8 @@ async def ingest_transit() -> int:
             await conn.execute(
                 """
                 INSERT INTO transit_stops (stop_name, route_type, lat, lng, geom)
-                VALUES ($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($4, $3), 4326))
+                VALUES ($1, $2, $3::numeric, $4::numeric,
+                        ST_SetSRID(ST_MakePoint($4::float, $3::float), 4326))
                 """,
                 stop["stop_name"],
                 stop["route_type"],

@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import requests
-from backend.sync.config import ALR_WFS_URL, DATABASE_URL, RICHMOND_BBOX
-from backend.sync.utils import get_db_connection
-from shapely.geometry import shape
+from shapely.geometry import MultiPolygon, shape
 from shapely.validation import make_valid
+
+from backend.sync.config import ALR_LAYER, ALR_WFS_URL, DATABASE_URL, RICHMOND_BBOX
+from backend.sync.utils import get_db_connection
 
 
 async def ingest_alr() -> int:
@@ -17,13 +18,13 @@ async def ingest_alr() -> int:
     print("=== Ingesting ALR Boundary ===")
 
     bbox = RICHMOND_BBOX
-    bbox_str = f"{bbox['xmin']},{bbox['ymin']},{bbox['xmax']},{bbox['ymax']}"
+    bbox_str = f"{bbox['xmin']},{bbox['ymin']},{bbox['xmax']},{bbox['ymax']},EPSG:4326"
 
     params = {
         "service": "WFS",
         "version": "2.0.0",
         "request": "GetFeature",
-        "typeName": "pub:WHSE_LEGAL_ADMIN_BOUNDARIES.OATS_ALR_POLYS",
+        "typeName": ALR_LAYER,
         "outputFormat": "application/json",
         "srsName": "EPSG:4326",
         "bbox": bbox_str,
@@ -56,8 +57,6 @@ async def ingest_alr() -> int:
                     continue
 
                 if geom.geom_type == "Polygon":
-                    from shapely.geometry import MultiPolygon
-
                     geom = MultiPolygon([geom])
 
                 wkt = geom.wkt
