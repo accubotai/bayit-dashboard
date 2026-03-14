@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import logging
 
 import asyncpg
@@ -17,18 +19,29 @@ async def get_pool() -> asyncpg.Pool:
     """Get or create the connection pool.
 
     Uses statement_cache_size=0 for Supabase pgbouncer compatibility.
-    On serverless (Vercel), each cold start creates a new pool with min_size=0.
+    Recreates pool if the event loop has changed (serverless cold start).
     """
     global _pool
-    if _pool is None:
-        logger.info("Creating connection pool to %s", settings.db_url[:40] + "...")
-        _pool = await asyncpg.create_pool(
-            dsn=settings.db_url,
-            min_size=0,
-            max_size=3,
-            statement_cache_size=0,
-            command_timeout=8,
-        )
+    try:
+        if _pool is not None:
+            # Test if pool is still usable
+            async with _pool.acquire() as conn:
+                await conn.fetchval("SELECT 1")
+            return _pool
+    except Exception:
+        # Pool is stale (event loop closed, connection dropped, etc.)
+        logger.info("Stale pool detected, recreating...")
+        _pool = None
+
+    loop = asyncio.get_running_loop()
+    logger.info("Creating connection pool on loop %s", id(loop))
+    _pool = await asyncpg.create_pool(
+        dsn=settings.db_url,
+        min_size=0,
+        max_size=3,
+        statement_cache_size=0,
+        command_timeout=8,
+    )
     return _pool
 
 
@@ -36,5 +49,6 @@ async def close_pool() -> None:
     """Close the connection pool."""
     global _pool
     if _pool is not None:
-        await _pool.close()
+        with contextlib.suppress(Exception):
+            await _pool.close()
         _pool = None
