@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import Map, { Source, Layer, Popup } from 'react-map-gl/maplibre';
 import type { MapLayerMouseEvent } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -14,8 +14,7 @@ import type { ParcelProperties, GeoJSONFeature } from '../utils/api';
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
 
 // Color parcels by owner type
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const FILL_COLOR: any = [
+const FILL_COLOR: unknown = [
   'case',
   ['==', ['get', 'owner_type'], 'Municipal'], '#3b82f6',
   ['==', ['get', 'owner_type'], 'Crown Provincial'], '#8b5cf6',
@@ -23,18 +22,13 @@ const FILL_COLOR: any = [
 ];
 
 export function MapView() {
-  const { mapRef, viewState, setViewState, bbox, onMoveEnd } = useMapViewport();
+  const { mapRef, viewState, setViewState, bbox, updateBbox } = useMapViewport();
   const { filters, updateFilter, resetFilters } = useFilters();
   const { data, isLoading, error } = useParcels(bbox, filters);
 
   const [popupFeature, setPopupFeature] = useState<GeoJSONFeature | null>(null);
   const [popupLngLat, setPopupLngLat] = useState<[number, number] | null>(null);
   const [selectedParcel, setSelectedParcel] = useState<ParcelProperties | null>(null);
-
-  useEffect(() => {
-    const timer = setTimeout(onMoveEnd, 500);
-    return () => clearTimeout(timer);
-  }, [onMoveEnd]);
 
   const onClick = useCallback((e: MapLayerMouseEvent) => {
     const feature = e.features?.[0];
@@ -47,7 +41,7 @@ export function MapView() {
     setPopupLngLat([e.lngLat.lng, e.lngLat.lat]);
   }, []);
 
-  // Build strict GeoJSON for MapLibre (no extra keys like total_count)
+  // Build strict GeoJSON for MapLibre
   const featureCount = data?.features?.length ?? 0;
   const geojsonData = {
     type: 'FeatureCollection' as const,
@@ -63,8 +57,9 @@ export function MapView() {
       <Map
         ref={mapRef}
         {...viewState}
-        onMove={(evt) => setViewState(evt.viewState)}
-        onMoveEnd={onMoveEnd}
+        onMove={(evt: { viewState: typeof viewState }) => setViewState(evt.viewState)}
+        onMoveEnd={updateBbox}
+        onLoad={updateBbox}
         onClick={onClick}
         interactiveLayerIds={['parcels-fill']}
         mapStyle={MAP_STYLE}
@@ -133,7 +128,10 @@ export function MapView() {
           <span className="text-green-700">{featureCount} parcels loaded ({data?.total_count?.toLocaleString()} total in area)</span>
         )}
         {!isLoading && !error && featureCount === 0 && bbox && (
-          <span className="text-gray-500">No parcels in this area. Try panning east.</span>
+          <span className="text-gray-500">No parcels in this area — try panning or zooming.</span>
+        )}
+        {!isLoading && !error && !bbox && (
+          <span className="text-gray-500">Loading map...</span>
         )}
       </div>
     </div>

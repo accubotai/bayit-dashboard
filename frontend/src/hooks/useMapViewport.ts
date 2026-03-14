@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef } from 'react';
-import type { MapRef } from 'react-map-gl/maplibre';
 
 // Center on the area where we have parcel data (eastern Richmond)
 const INITIAL_VIEW = {
@@ -9,22 +8,28 @@ const INITIAL_VIEW = {
 };
 
 export function useMapViewport() {
-  const mapRef = useRef<MapRef>(null);
+  // Use any type for ref since MapLibre types differ from declaration
+  const mapRef = useRef<any>(null);
   const [viewState, setViewState] = useState(INITIAL_VIEW);
   const [bbox, setBbox] = useState<[number, number, number, number] | null>(null);
 
-  const onMoveEnd = useCallback(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    const bounds = map.getMap().getBounds();
-    if (!bounds) return;
-    setBbox([
-      bounds.getWest(),
-      bounds.getSouth(),
-      bounds.getEast(),
-      bounds.getNorth(),
-    ]);
+  const updateBbox = useCallback(() => {
+    try {
+      const map = mapRef.current;
+      if (!map) return;
+      const mapInstance = map.getMap?.() ?? map;
+      const bounds = mapInstance.getBounds?.();
+      if (!bounds) return;
+      setBbox([
+        bounds.getWest(),
+        bounds.getSouth(),
+        bounds.getEast(),
+        bounds.getNorth(),
+      ]);
+    } catch {
+      // Map not ready yet
+    }
   }, []);
 
-  return { mapRef, viewState, setViewState, bbox, onMoveEnd };
+  return { mapRef, viewState, setViewState, bbox, updateBbox };
 }
