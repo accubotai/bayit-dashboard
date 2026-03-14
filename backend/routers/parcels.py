@@ -112,7 +112,7 @@ async def _fetch_via_rest(params: dict) -> list[dict]:
         "p_hide_private": params["hide_private"],
         "p_min_lot_area": params["min_lot_area"],
         "p_max_lot_area": params["max_lot_area"],
-        "p_exclude_parks": params["exclude_parks"],
+        "p_exclude_unusable": params["exclude_parks"],
     }
     headers = {
         "apikey": SUPABASE_KEY,
