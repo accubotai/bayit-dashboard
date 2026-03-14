@@ -1,0 +1,16 @@
+## Bayit Dashboard Tor config — Canadian exit nodes only
+## Usage: tor -f scripts/torrc.bayit
+
+SocksPort 9150
+DataDirectory /tmp/tor-bayit
+
+## Restrict exit nodes to Canada ({ca})
+## Ideally BC, but Tor doesn't support province-level filtering.
+## {ca} = all Canadian exit nodes.
+ExitNodes {ca}
+StrictNodes 1
+
+## Performance tuning for data scraping
+CircuitBuildTimeout 30
+LearnCircuitBuildTimeout 0
+NumEntryGuards 3

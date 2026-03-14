@@ -37,9 +37,19 @@ export interface ParcelCollection {
 
 export interface Filters {
   owner_type?: string;
-  permits_assembly?: boolean;
-  no_building?: boolean;
   exclude_alr?: boolean;
+  hide_private?: boolean;
+  min_lot_area?: number;
+}
+
+// Clamp bbox to Richmond bounds so the API doesn't reject it
+function clampBbox(bbox: [number, number, number, number]): [number, number, number, number] {
+  return [
+    Math.max(bbox[0], -123.30),
+    Math.max(bbox[1], 49.08),
+    Math.min(bbox[2], -123.00),
+    Math.min(bbox[3], 49.23),
+  ];
 }
 
 export async function fetchParcels(
@@ -47,15 +57,19 @@ export async function fetchParcels(
   limit: number = 500,
   filters: Filters = {},
 ): Promise<ParcelCollection> {
+  const clamped = clampBbox(bbox);
+  if (clamped[0] >= clamped[2] || clamped[1] >= clamped[3]) {
+    return { type: 'FeatureCollection', features: [], total_count: 0 };
+  }
   const params = new URLSearchParams({
-    bbox: bbox.join(','),
+    bbox: clamped.join(','),
     limit: String(limit),
   });
 
   if (filters.owner_type) params.set('owner_type', filters.owner_type);
-  if (filters.permits_assembly !== undefined) params.set('permits_assembly', String(filters.permits_assembly));
-  if (filters.no_building !== undefined) params.set('no_building', String(filters.no_building));
   if (filters.exclude_alr) params.set('exclude_alr', 'true');
+  if (filters.hide_private) params.set('hide_private', 'true');
+  if (filters.min_lot_area) params.set('min_lot_area', String(filters.min_lot_area));
 
   const res = await fetch(`${API_BASE}/api/parcels?${params}`);
   if (!res.ok) throw new Error(`API error: ${res.status}`);

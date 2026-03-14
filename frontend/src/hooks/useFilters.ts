@@ -1,19 +1,21 @@
 import { useState, useCallback } from 'react';
 import type { Filters } from '../utils/api';
 
+// Default filters for synagogue site search:
+// - Hide private land not for sale
+// - Exclude ALR (can't build on agricultural land)
+// - Minimum 1000 m² lot area (building + parking)
+const SYNAGOGUE_DEFAULTS: Filters = {
+  hide_private: true,
+  exclude_alr: true,
+  min_lot_area: 1000,
+};
+
 export function useFilters() {
-  const [filters, setFilters] = useState<Filters>({});
+  const [filters, setFilters] = useState<Filters>(SYNAGOGUE_DEFAULTS);
 
   const updateFilter = useCallback(<K extends keyof Filters>(key: K, value: Filters[K]) => {
-    setFilters(prev => {
-      const next = { ...prev };
-      if (value === undefined || value === '' || value === false) {
-        delete next[key];
-      } else {
-        next[key] = value;
-      }
-      return next;
-    });
+    setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 
   const resetFilters = useCallback(() => setFilters({}), []);

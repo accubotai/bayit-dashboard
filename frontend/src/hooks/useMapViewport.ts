@@ -1,30 +1,35 @@
 import { useState, useCallback, useRef } from 'react';
-import type { MapRef } from 'react-map-gl/maplibre';
 
-// Central Richmond default view
+// Central Richmond — No. 3 Road corridor, Brighouse area
 const INITIAL_VIEW = {
-  longitude: -123.135,
-  latitude: 49.165,
-  zoom: 13,
+  longitude: -123.137,
+  latitude: 49.166,
+  zoom: 14,
 };
 
 export function useMapViewport() {
-  const mapRef = useRef<MapRef>(null);
+  // Use any type for ref since MapLibre types differ from declaration
+  const mapRef = useRef<any>(null);
   const [viewState, setViewState] = useState(INITIAL_VIEW);
   const [bbox, setBbox] = useState<[number, number, number, number] | null>(null);
 
-  const onMoveEnd = useCallback(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    const bounds = map.getMap().getBounds();
-    if (!bounds) return;
-    setBbox([
-      bounds.getWest(),
-      bounds.getSouth(),
-      bounds.getEast(),
-      bounds.getNorth(),
-    ]);
+  const updateBbox = useCallback(() => {
+    try {
+      const map = mapRef.current;
+      if (!map) return;
+      const mapInstance = map.getMap?.() ?? map;
+      const bounds = mapInstance.getBounds?.();
+      if (!bounds) return;
+      setBbox([
+        bounds.getWest(),
+        bounds.getSouth(),
+        bounds.getEast(),
+        bounds.getNorth(),
+      ]);
+    } catch {
+      // Map not ready yet
+    }
   }, []);
 
-  return { mapRef, viewState, setViewState, bbox, onMoveEnd };
+  return { mapRef, viewState, setViewState, bbox, updateBbox };
 }
