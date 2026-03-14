@@ -1,10 +1,10 @@
-"""Database connection using asyncpg."""
+"""Database access — asyncpg pool for local dev, Supabase REST for serverless."""
 
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import logging
+import os
 
 import asyncpg
 
@@ -12,29 +12,30 @@ from backend.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Supabase REST API credentials (set on Vercel, absent locally)
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
+
 _pool: asyncpg.Pool | None = None
 
 
-async def get_pool() -> asyncpg.Pool:
-    """Get or create the connection pool.
+def use_rest() -> bool:
+    """Whether to use Supabase REST API instead of asyncpg."""
+    return bool(SUPABASE_URL and SUPABASE_KEY)
 
-    Uses statement_cache_size=0 for Supabase pgbouncer compatibility.
-    Recreates pool if the event loop has changed (serverless cold start).
-    """
+
+async def get_pool() -> asyncpg.Pool:
+    """Get or create the asyncpg connection pool (local/direct connections)."""
     global _pool
     try:
         if _pool is not None:
-            # Test if pool is still usable
             async with _pool.acquire() as conn:
                 await conn.fetchval("SELECT 1")
             return _pool
     except Exception:
-        # Pool is stale (event loop closed, connection dropped, etc.)
-        logger.info("Stale pool detected, recreating...")
+        logger.info("Stale pool, recreating...")
         _pool = None
 
-    loop = asyncio.get_running_loop()
-    logger.info("Creating connection pool on loop %s", id(loop))
     _pool = await asyncpg.create_pool(
         dsn=settings.db_url,
         min_size=0,
