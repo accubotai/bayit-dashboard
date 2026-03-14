@@ -1,0 +1,8 @@
+* @accubotai
+/backend/ @accubotai
+/sql/ @accubotai
+/frontend/ @accubotai
+/.github/ @accubotai
+/CLAUDE.md @accubotai
+/.pre-commit-config.yaml @accubotai
+/docker-compose*.yml @accubotai
