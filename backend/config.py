@@ -47,11 +47,11 @@ class Settings(BaseSettings):
         """Parse CORS origins from comma-separated string."""
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
-    @field_validator("cors_origins")
+    @field_validator("environment", "cors_origins", mode="before")
     @classmethod
-    def no_wildcard_in_production(cls, v: str, info: object) -> str:  # noqa: ARG003
-        """Reject wildcard CORS in production."""
-        return v
+    def strip_whitespace(cls, v: str) -> str:
+        """Strip whitespace/newlines from env var values."""
+        return v.strip() if isinstance(v, str) else v
 
 
 def validate_bbox(min_lng: float, min_lat: float, max_lng: float, max_lat: float) -> None:
