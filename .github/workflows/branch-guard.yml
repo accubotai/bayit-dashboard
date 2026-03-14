@@ -1,0 +1,19 @@
+name: Branch Guard
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  guard:
+    name: Verify Push is via Merge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for direct push
+        run: |
+          if [ "${{ github.event.head_commit.committer.username }}" != "web-flow" ]; then
+            echo "::error::Direct push to main detected. All changes must go through Pull Requests."
+            echo "Actor: ${{ github.actor }}"
+            exit 1
+          fi
+          echo "Merge commit from PR — allowed"

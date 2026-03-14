@@ -1,0 +1,40 @@
+name: Dependency Audit
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  python-audit:
+    name: Python Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Audit
+        run: |
+          pip install pip-audit
+          if [ -f backend/requirements.txt ]; then
+            pip-audit -r backend/requirements.txt
+          else
+            echo "No requirements.txt yet"
+          fi
+
+  node-audit:
+    name: Node Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Audit
+        run: |
+          if [ -f frontend/package-lock.json ]; then
+            cd frontend && npm audit --audit-level=high
+          else
+            echo "No package-lock.json yet"
+          fi
