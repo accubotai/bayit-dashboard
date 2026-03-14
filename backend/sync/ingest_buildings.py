@@ -1,47 +1,18 @@
-"""Ingest building footprints from Richmond GeoHub ArcGIS REST API."""
+"""Building footprints — placeholder until City of Richmond publishes GIS data.
+
+Richmond BC does not expose building footprint polygons via a public API.
+Building footprint data would need to be obtained from RIM network inspection
+or a future open data release.
+"""
 
 from __future__ import annotations
 
-from backend.sync.config import DATABASE_URL, GEOHUB_BUILDINGS_URL
-from backend.sync.utils import fetch_arcgis_all, get_db_connection, simplify_geometry
-
 
 async def ingest_buildings() -> int:
-    """Fetch all building footprints from GeoHub and insert into database.
+    """Placeholder — building footprint polygons not publicly available.
 
-    Returns the number of records inserted.
+    Returns 0 (no data source available).
     """
-    print("=== Ingesting Building Footprints ===")
-
-    features = fetch_arcgis_all(GEOHUB_BUILDINGS_URL)
-
-    conn = await get_db_connection(DATABASE_URL)
-    count = 0
-
-    try:
-        # Clear existing and re-insert
-        await conn.execute("TRUNCATE TABLE building_footprints RESTART IDENTITY")
-
-        for feature in features:
-            geom = feature.get("geometry")
-            if not geom:
-                continue
-
-            wkt = simplify_geometry(geom)
-            if not wkt:
-                continue
-
-            await conn.execute(
-                """
-                INSERT INTO building_footprints (geom)
-                VALUES (ST_GeomFromText($1, 4326))
-                """,
-                wkt,
-            )
-            count += 1
-
-    finally:
-        await conn.close()
-
-    print(f"  Building footprints ingested: {count}")
-    return count
+    print("=== Building Footprints ===")
+    print("  SKIPPED: Richmond BC building footprints not publicly available via API.")
+    return 0
