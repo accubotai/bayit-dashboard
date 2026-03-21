@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { Filters } from '../utils/api';
+import type { AssemblyFilters } from '../hooks/useAssemblyFilters';
+import { ZONE_GROUPS, ASSEMBLY_OWNER_TYPES } from '../hooks/useAssemblyFilters';
 
 interface FilterPanelProps {
   filters: Filters;
@@ -9,6 +11,10 @@ interface FilterPanelProps {
   showAssembly: boolean;
   onToggleAssembly: () => void;
   assemblyCount: number;
+  assemblyTotalInView: number;
+  assemblyFilters: AssemblyFilters;
+  updateAssemblyFilter: <K extends keyof AssemblyFilters>(key: K, value: AssemblyFilters[K]) => void;
+  resetAssemblyFilters: () => void;
 }
 
 function InfoBubble({ text }: { text: string }) {
@@ -32,7 +38,11 @@ function InfoBubble({ text }: { text: string }) {
   );
 }
 
-export function FilterPanel({ filters, updateFilter, resetFilters, totalCount, showAssembly, onToggleAssembly, assemblyCount }: FilterPanelProps) {
+export function FilterPanel({
+  filters, updateFilter, resetFilters, totalCount,
+  showAssembly, onToggleAssembly, assemblyCount, assemblyTotalInView,
+  assemblyFilters, updateAssemblyFilter, resetAssemblyFilters,
+}: FilterPanelProps) {
   return (
     <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur rounded-lg shadow-lg p-4 w-72 max-h-[calc(100vh-2rem)] overflow-y-auto">
       <div className="flex items-center justify-between mb-1">
@@ -138,7 +148,7 @@ export function FilterPanel({ filters, updateFilter, resetFilters, totalCount, s
         </button>
       </div>
 
-      {/* Assembly Zoned Parcels */}
+      {/* ─── Assembly Zoned Parcels ─── */}
       <div className="border-t border-amber-200 bg-amber-50/50 -mx-4 px-4 py-3 mb-3">
         <label className="flex items-center gap-2 text-sm font-medium text-amber-900">
           <input
@@ -150,8 +160,125 @@ export function FilterPanel({ filters, updateFilter, resetFilters, totalCount, s
           Show assembly-zoned parcels
           <InfoBubble text="Highlights all properties in Richmond that are zoned to permit Religious Assembly use under Bylaw 8500. These are the parcels where a synagogue could potentially be built. Gold overlay shows matched parcels; gold dots show addresses that couldn't be matched to a parcel polygon." />
         </label>
-        {showAssembly && assemblyCount > 0 && (
-          <p className="text-xs text-amber-700 mt-1 ml-6">{assemblyCount} assembly-zoned parcels in view</p>
+        {showAssembly && assemblyTotalInView > 0 && (
+          <p className="text-xs text-amber-700 mt-1 ml-6">
+            {assemblyCount === assemblyTotalInView
+              ? `${assemblyCount} assembly-zoned parcels in view`
+              : `${assemblyCount} of ${assemblyTotalInView} shown (filtered)`}
+          </p>
+        )}
+
+        {/* Assembly sub-filters */}
+        {showAssembly && (
+          <div className="mt-3 ml-1 space-y-2.5">
+            {/* Zoning code */}
+            <div>
+              <label className="block text-xs font-medium text-amber-800 mb-0.5">
+                Zoning
+                <InfoBubble text="ASY zones are purpose-built for assembly (worship, community). CA (Commercial Activity) and CDT1 (City Centre) also permit assembly but are primarily commercial zones. CC (Community Commercial) and CEA (Entertainment Area) permit it with conditions." />
+              </label>
+              <select
+                value={assemblyFilters.zoning}
+                onChange={(e) => updateAssemblyFilter('zoning', e.target.value)}
+                className="w-full text-xs border border-amber-300 rounded px-2 py-1.5 bg-white"
+              >
+                {ZONE_GROUPS.map(z => (
+                  <option key={z.value} value={z.value}>{z.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Owner type */}
+            <div>
+              <label className="block text-xs font-medium text-amber-800 mb-0.5">
+                Owner
+                <InfoBubble text="Local Government (City of Richmond) land may be available for community lease or purchase. Private land requires negotiation with the owner. Crown Agency land (e.g. BC Housing, health authorities) is typically restricted." />
+              </label>
+              <select
+                value={assemblyFilters.ownerType}
+                onChange={(e) => updateAssemblyFilter('ownerType', e.target.value)}
+                className="w-full text-xs border border-amber-300 rounded px-2 py-1.5 bg-white"
+              >
+                {ASSEMBLY_OWNER_TYPES.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Lot area range */}
+            <div>
+              <label className="block text-xs font-medium text-amber-800 mb-0.5">
+                Lot area (m²)
+                <InfoBubble text="Filter assembly parcels by lot size. A synagogue with 100-seat sanctuary, social hall, kitchen, offices, and 30-space parking lot typically needs 1,500–3,000 m². Parcels under 500 m² are too small; over 50,000 m² are likely infrastructure." />
+              </label>
+              <div className="flex gap-1.5">
+                <input
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={assemblyFilters.minLotArea ?? ''}
+                  onChange={(e) => updateAssemblyFilter('minLotArea', e.target.value ? Number(e.target.value) : undefined)}
+                  className="w-1/2 text-xs border border-amber-300 rounded px-2 py-1 bg-white"
+                  placeholder="Min"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={assemblyFilters.maxLotArea ?? ''}
+                  onChange={(e) => updateAssemblyFilter('maxLotArea', e.target.value ? Number(e.target.value) : undefined)}
+                  className="w-1/2 text-xs border border-amber-300 rounded px-2 py-1 bg-white"
+                  placeholder="Max"
+                />
+              </div>
+            </div>
+
+            {/* Exclude ALR */}
+            <label className="flex items-center gap-1.5 text-xs text-amber-800">
+              <input
+                type="checkbox"
+                checked={assemblyFilters.excludeAlr}
+                onChange={(e) => updateAssemblyFilter('excludeAlr', e.target.checked)}
+                className="rounded accent-amber-500"
+              />
+              Exclude ALR
+              <InfoBubble text="Removes assembly-zoned parcels that fall within the Agricultural Land Reserve. Development is effectively prohibited on ALR land regardless of zoning." />
+            </label>
+
+            {/* Exclude occupied */}
+            <label className="flex items-center gap-1.5 text-xs text-amber-800">
+              <input
+                type="checkbox"
+                checked={assemblyFilters.excludeOccupied}
+                onChange={(e) => updateAssemblyFilter('excludeOccupied', e.target.checked)}
+                className="rounded accent-amber-500"
+              />
+              Exclude occupied parcels
+              <InfoBubble text="Hides parcels with existing buildings — apartments, retail, restaurants, hotels, schools, and other established uses. Shows only vacant or undeveloped land that would be easier to acquire and develop." />
+            </label>
+
+            {/* Only matched parcels */}
+            <label className="flex items-center gap-1.5 text-xs text-amber-800">
+              <input
+                type="checkbox"
+                checked={assemblyFilters.onlyMatched}
+                onChange={(e) => updateAssemblyFilter('onlyMatched', e.target.checked)}
+                className="rounded accent-amber-500"
+              />
+              Only show confirmed parcels
+              <InfoBubble text="Hides point markers (gold dots) and shows only parcels with confirmed polygon boundaries from ParcelMap BC. Point markers are geocoded from addresses but may not precisely match a land parcel." />
+            </label>
+
+            {/* Reset assembly filters */}
+            <div className="flex justify-end pt-0.5">
+              <button
+                onClick={resetAssemblyFilters}
+                className="text-[11px] text-amber-700 hover:text-amber-900"
+              >
+                Reset assembly filters
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
