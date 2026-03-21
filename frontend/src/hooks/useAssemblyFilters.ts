@@ -47,19 +47,15 @@ export function useAssemblyFilters() {
       if (!props.zoning.includes(filters.zoning)) return false;
     }
 
-    // Owner type filter (only for matched parcels)
-    if (filters.ownerType && props.owner_type) {
-      if (props.owner_type !== filters.ownerType) return false;
-    }
-    // If owner_type filter is set but parcel has no owner data (unmatched), hide it
-    if (filters.ownerType && !props.owner_type) return false;
+    // Owner type filter
+    if (filters.ownerType && props.owner_type !== filters.ownerType) return false;
 
-    // Lot area filters (only for matched parcels with area data)
-    if (filters.minLotArea !== undefined && props.lot_area_sqm !== null) {
-      if (props.lot_area_sqm < filters.minLotArea) return false;
+    // Lot area filters (exclude parcels without area data when filter is active)
+    if (filters.minLotArea !== undefined) {
+      if (props.lot_area_sqm === null || props.lot_area_sqm < filters.minLotArea) return false;
     }
-    if (filters.maxLotArea !== undefined && props.lot_area_sqm !== null) {
-      if (props.lot_area_sqm > filters.maxLotArea) return false;
+    if (filters.maxLotArea !== undefined) {
+      if (props.lot_area_sqm === null || props.lot_area_sqm > filters.maxLotArea) return false;
     }
 
     // Exclude occupied (based on place_type)
