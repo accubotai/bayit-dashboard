@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useParcels } from '../hooks/useParcels';
 import { useAssemblyParcels } from '../hooks/useAssemblyParcels';
+import { useAssemblyFilters } from '../hooks/useAssemblyFilters';
 import { useFilters } from '../hooks/useFilters';
 import { useMapViewport } from '../hooks/useMapViewport';
 import { FilterPanel } from './FilterPanel';
@@ -31,6 +32,7 @@ export function MapView() {
 
   const [showAssembly, setShowAssembly] = useState(true);
   const { data: assemblyData } = useAssemblyParcels(bbox, showAssembly);
+  const { assemblyFilters, updateAssemblyFilter, resetAssemblyFilters, filterFeature } = useAssemblyFilters();
 
   const [popupFeature, setPopupFeature] = useState<GeoJSONFeature | null>(null);
   const [popupLngLat, setPopupLngLat] = useState<[number, number] | null>(null);
@@ -75,10 +77,11 @@ export function MapView() {
     })),
   };
 
-  // Assembly parcels — separate into polygons and points
+  // Assembly parcels — filter, then separate into polygons and points
+  const filteredAssembly = (assemblyData?.features ?? []).filter(f => filterFeature(f.properties));
   const assemblyPolygons = {
     type: 'FeatureCollection' as const,
-    features: (assemblyData?.features ?? [])
+    features: filteredAssembly
       .filter(f => f.properties.geom_type === 'polygon')
       .map(f => ({
         type: 'Feature' as const,
@@ -88,7 +91,7 @@ export function MapView() {
   };
   const assemblyPoints = {
     type: 'FeatureCollection' as const,
-    features: (assemblyData?.features ?? [])
+    features: filteredAssembly
       .filter(f => f.properties.geom_type === 'point')
       .map(f => ({
         type: 'Feature' as const,
@@ -96,7 +99,8 @@ export function MapView() {
         properties: { ...f.properties },
       })),
   };
-  const assemblyCount = (assemblyData?.features?.length ?? 0);
+  const assemblyCount = filteredAssembly.length;
+  const assemblyTotalInView = assemblyData?.features?.length ?? 0;
 
   return (
     <div className="relative w-full h-full">
@@ -216,6 +220,10 @@ export function MapView() {
         showAssembly={showAssembly}
         onToggleAssembly={() => setShowAssembly(prev => !prev)}
         assemblyCount={assemblyCount}
+        assemblyTotalInView={assemblyTotalInView}
+        assemblyFilters={assemblyFilters}
+        updateAssemblyFilter={updateAssemblyFilter}
+        resetAssemblyFilters={resetAssemblyFilters}
       />
 
       {selectedParcel && (
