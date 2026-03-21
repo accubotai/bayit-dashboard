@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
       - name: Check conventional commits
         run: |
-          COMMITS=$(git log --format='%s' origin/main..HEAD)
+          COMMITS=$(git log --format='%s' origin/main..HEAD --no-merges)
           PATTERN='^(feat|fix|refactor|test|docs|ci|chore|perf|security)\((frontend|backend|pipeline|db|infra|ci|docs)\): .+'
           echo "$COMMITS" | while IFS= read -r msg; do
             if [ -n "$msg" ] && ! echo "$msg" | grep -qE "$PATTERN"; then

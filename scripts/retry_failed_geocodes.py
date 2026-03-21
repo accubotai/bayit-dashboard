@@ -24,7 +24,7 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL",
     os.getenv(
         "SUPABASE_DIRECT_URL",
-        "postgresql://postgres:IT5ht83AQ50xKKeKGPpOofdizQ7eBj@db.tbvypqjvaspkfgtkimlh.supabase.co:5432/postgres",
+        "postgresql://user:password@localhost:5432/richmond_land",
     ),
 )
 
