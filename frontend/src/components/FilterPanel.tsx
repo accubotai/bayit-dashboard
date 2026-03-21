@@ -6,6 +6,9 @@ interface FilterPanelProps {
   updateFilter: <K extends keyof Filters>(key: K, value: Filters[K]) => void;
   resetFilters: () => void;
   totalCount: number;
+  showAssembly: boolean;
+  onToggleAssembly: () => void;
+  assemblyCount: number;
 }
 
 function InfoBubble({ text }: { text: string }) {
@@ -29,7 +32,7 @@ function InfoBubble({ text }: { text: string }) {
   );
 }
 
-export function FilterPanel({ filters, updateFilter, resetFilters, totalCount }: FilterPanelProps) {
+export function FilterPanel({ filters, updateFilter, resetFilters, totalCount, showAssembly, onToggleAssembly, assemblyCount }: FilterPanelProps) {
   return (
     <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur rounded-lg shadow-lg p-4 w-72 max-h-[calc(100vh-2rem)] overflow-y-auto">
       <div className="flex items-center justify-between mb-1">
@@ -69,21 +72,46 @@ export function FilterPanel({ filters, updateFilter, resetFilters, totalCount }:
         </label>
       </div>
 
-      {/* Minimum lot area */}
+      {/* Exclude Unusable Land */}
+      <div className="mb-2.5">
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={filters.exclude_unusable !== false}
+            onChange={(e) => updateFilter('exclude_unusable', e.target.checked)}
+            className="rounded"
+          />
+          Exclude unusable land
+          <InfoBubble text="Filters out land that cannot realistically be developed: public parks, schools, hospitals, cemeteries, existing places of worship, sports facilities, community centres, Crown Agency properties (BC Housing, health authorities, transit), and road rights-of-way. Data sourced from OpenStreetMap and ParcelMap BC." />
+        </label>
+      </div>
+
+      {/* Lot area range */}
       <div className="mb-2.5">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Minimum lot area (m²)
-          <InfoBubble text="A synagogue typically needs at least 1,000–2,000 m² for the building, parking, accessible entrance, and outdoor space. Smaller lots may work for a smaller shul without parking." />
+          Lot area range (m²)
+          <InfoBubble text="A synagogue typically needs 1,000–5,000 m² for the building, parking, accessible entrance, and outdoor space. Very large parcels (50,000+ m²) are usually parks or infrastructure, not buildable sites." />
         </label>
-        <input
-          type="number"
-          min={0}
-          step={100}
-          value={filters.min_lot_area ?? 1000}
-          onChange={(e) => updateFilter('min_lot_area', e.target.value ? Number(e.target.value) : undefined)}
-          className="w-full text-sm border border-gray-300 rounded px-2 py-1.5"
-          placeholder="e.g. 1000"
-        />
+        <div className="flex gap-2">
+          <input
+            type="number"
+            min={0}
+            step={100}
+            value={filters.min_lot_area ?? ''}
+            onChange={(e) => updateFilter('min_lot_area', e.target.value ? Number(e.target.value) : undefined)}
+            className="w-1/2 text-sm border border-gray-300 rounded px-2 py-1.5"
+            placeholder="Min"
+          />
+          <input
+            type="number"
+            min={0}
+            step={1000}
+            value={filters.max_lot_area ?? ''}
+            onChange={(e) => updateFilter('max_lot_area', e.target.value ? Number(e.target.value) : undefined)}
+            className="w-1/2 text-sm border border-gray-300 rounded px-2 py-1.5"
+            placeholder="Max"
+          />
+        </div>
       </div>
 
       {/* Owner Type */}
@@ -110,10 +138,31 @@ export function FilterPanel({ filters, updateFilter, resetFilters, totalCount }:
         </button>
       </div>
 
+      {/* Assembly Zoned Parcels */}
+      <div className="border-t border-amber-200 bg-amber-50/50 -mx-4 px-4 py-3 mb-3">
+        <label className="flex items-center gap-2 text-sm font-medium text-amber-900">
+          <input
+            type="checkbox"
+            checked={showAssembly}
+            onChange={onToggleAssembly}
+            className="rounded accent-amber-500"
+          />
+          Show assembly-zoned parcels
+          <InfoBubble text="Highlights all properties in Richmond that are zoned to permit Religious Assembly use under Bylaw 8500. These are the parcels where a synagogue could potentially be built. Gold overlay shows matched parcels; gold dots show addresses that couldn't be matched to a parcel polygon." />
+        </label>
+        {showAssembly && assemblyCount > 0 && (
+          <p className="text-xs text-amber-700 mt-1 ml-6">{assemblyCount} assembly-zoned parcels in view</p>
+        )}
+      </div>
+
       {/* Legend */}
       <div className="border-t border-gray-200 pt-3">
         <h3 className="text-sm font-medium text-gray-700 mb-2">Legend</h3>
         <div className="space-y-1 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: '#f59e0b', border: '1.5px solid #b45309' }} />
+            Assembly-zoned (synagogue permitted)
+          </div>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: '#3b82f6' }} />
             Municipal (city-owned)

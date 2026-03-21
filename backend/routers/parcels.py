@@ -62,6 +62,8 @@ async def get_parcels(
     exclude_alr: bool = Query(False, description="Exclude ALR parcels"),
     hide_private: bool = Query(False, description="Hide private parcels without listings"),
     min_lot_area: float | None = Query(None, ge=0, description="Minimum lot area in m²"),
+    max_lot_area: float | None = Query(None, ge=0, description="Maximum lot area in m²"),
+    exclude_unusable: bool = Query(False, description="Exclude unusable parcels (parks, schools, etc.)"),
 ) -> ParcelCollection:
     """Return enriched parcels within a bounding box as GeoJSON FeatureCollection."""
     parts = bbox.split(",")
@@ -82,6 +84,8 @@ async def get_parcels(
         "exclude_alr": exclude_alr,
         "hide_private": hide_private,
         "min_lot_area": min_lot_area,
+        "max_lot_area": max_lot_area,
+        "exclude_unusable": exclude_unusable,
     }
 
     if use_rest():
@@ -107,6 +111,8 @@ async def _fetch_via_rest(params: dict) -> list[dict]:
         "p_exclude_alr": params["exclude_alr"],
         "p_hide_private": params["hide_private"],
         "p_min_lot_area": params["min_lot_area"],
+        "p_max_lot_area": params["max_lot_area"],
+        "p_exclude_unusable": params["exclude_unusable"],
     }
     headers = {
         "apikey": SUPABASE_KEY,
@@ -130,7 +136,7 @@ async def _fetch_via_asyncpg(params: dict) -> list[dict]:
     """Fetch parcels via asyncpg (local dev)."""
     pool = await get_pool()
     rows = await pool.fetch(
-        "SELECT * FROM get_parcels_in_bbox($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        "SELECT * FROM get_parcels_in_bbox($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
         params["min_lng"],
         params["min_lat"],
         params["max_lng"],
@@ -140,5 +146,7 @@ async def _fetch_via_asyncpg(params: dict) -> list[dict]:
         params["exclude_alr"],
         params["hide_private"],
         params["min_lot_area"],
+        params["max_lot_area"],
+        params["exclude_unusable"],
     )
     return [dict(row) for row in rows]

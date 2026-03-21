@@ -1,0 +1,6 @@
+[allowlist]
+  commits = [
+    "18265ad3a9a423fed88e5e1fd52977a321765b44",
+    "5ce7bafa7b700e2f5f4c66334b02debb81b05fe8",
+  ]
+  description = "Allowlist commit that contained dev DB credentials (since removed)"

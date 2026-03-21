@@ -5,12 +5,14 @@ from __future__ import annotations
 import typing
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from backend.config import settings
 from backend.db import close_pool, get_pool
-from backend.routers import health, parcels, zones
+from backend.routers import assembly, auth, health, parcels, zones
+from backend.routers.auth import verify_token
 
 if typing.TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -36,10 +38,31 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
     allow_credentials=True,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
+# Public routes (no auth required)
+PUBLIC_PATHS = {"/api/health", "/api/health/db", "/api/login", "/api/auth/check", "/api/logout"}
+
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    """Require authentication for protected API endpoints."""
+    path = request.url.path
+    # Allow public paths and non-API paths (frontend static files)
+    if not path.startswith("/api/") or path in PUBLIC_PATHS:
+        return await call_next(request)
+
+    token = request.cookies.get("session", "")
+    if not verify_token(token):
+        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+
+    return await call_next(request)
+
+
+app.include_router(assembly.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")
 app.include_router(health.router, prefix="/api")
 app.include_router(parcels.router, prefix="/api")
 app.include_router(zones.router, prefix="/api")

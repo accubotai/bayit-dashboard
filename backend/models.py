@@ -53,6 +53,39 @@ class ParcelCollection(BaseModel):
     total_count: int
 
 
+class AssemblyProperties(BaseModel):
+    """Properties for an assembly-zoned parcel."""
+
+    id: int
+    pid: str | None = None
+    civic_address: str | None = None
+    address: str | None = None
+    zoning: str | None = None
+    owner_type: str | None = None
+    lot_area_sqm: float | None = None
+    owner_name: str | None = None
+    place_type: str | None = None
+    place_name: str | None = None
+    in_alr: bool | None = None
+    geom_type: str | None = None
+
+
+class AssemblyFeature(BaseModel):
+    """A single assembly parcel GeoJSON feature."""
+
+    type: str = "Feature"
+    geometry: dict
+    properties: AssemblyProperties
+
+
+class AssemblyCollection(BaseModel):
+    """GeoJSON FeatureCollection of assembly parcels."""
+
+    type: str = "FeatureCollection"
+    features: list[AssemblyFeature]
+    total_count: int
+
+
 class ZoneProperties(BaseModel):
     """Properties for a zoning district feature."""
 

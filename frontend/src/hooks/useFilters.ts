@@ -8,7 +8,9 @@ import type { Filters } from '../utils/api';
 const SYNAGOGUE_DEFAULTS: Filters = {
   hide_private: true,
   exclude_alr: true,
+  exclude_unusable: true,
   min_lot_area: 1000,
+  max_lot_area: 10000,
 };
 
 export function useFilters() {

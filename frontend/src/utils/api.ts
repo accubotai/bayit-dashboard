@@ -40,6 +40,8 @@ export interface Filters {
   exclude_alr?: boolean;
   hide_private?: boolean;
   min_lot_area?: number;
+  max_lot_area?: number;
+  exclude_unusable?: boolean;
 }
 
 // Clamp bbox to Richmond bounds so the API doesn't reject it
@@ -50,6 +52,44 @@ function clampBbox(bbox: [number, number, number, number]): [number, number, num
     Math.min(bbox[2], -123.00),
     Math.min(bbox[3], 49.23),
   ];
+}
+
+export interface AssemblyProperties {
+  id: number;
+  pid: string | null;
+  civic_address: string | null;
+  address: string | null;
+  zoning: string | null;
+  owner_type: string | null;
+  lot_area_sqm: number | null;
+  owner_name: string | null;
+  place_type: string | null;
+  place_name: string | null;
+  in_alr: boolean | null;
+  geom_type: string | null;
+}
+
+export interface AssemblyCollection {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: Record<string, unknown>;
+    properties: AssemblyProperties;
+  }>;
+  total_count: number;
+}
+
+export async function fetchAssemblyParcels(
+  bbox: [number, number, number, number],
+): Promise<AssemblyCollection> {
+  const clamped = clampBbox(bbox);
+  if (clamped[0] >= clamped[2] || clamped[1] >= clamped[3]) {
+    return { type: 'FeatureCollection', features: [], total_count: 0 };
+  }
+  const params = new URLSearchParams({ bbox: clamped.join(',') });
+  const res = await fetch(`${API_BASE}/api/assembly-parcels?${params}`, { credentials: 'include' });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
 }
 
 export async function fetchParcels(
@@ -70,8 +110,10 @@ export async function fetchParcels(
   if (filters.exclude_alr) params.set('exclude_alr', 'true');
   if (filters.hide_private) params.set('hide_private', 'true');
   if (filters.min_lot_area) params.set('min_lot_area', String(filters.min_lot_area));
+  if (filters.max_lot_area) params.set('max_lot_area', String(filters.max_lot_area));
+  if (filters.exclude_unusable) params.set('exclude_unusable', 'true');
 
-  const res = await fetch(`${API_BASE}/api/parcels?${params}`);
+  const res = await fetch(`${API_BASE}/api/parcels?${params}`, { credentials: 'include' });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
