@@ -4,12 +4,15 @@ import type { MapLayerMouseEvent } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useParcels } from '../hooks/useParcels';
+import { useAssemblyParcels } from '../hooks/useAssemblyParcels';
 import { useFilters } from '../hooks/useFilters';
 import { useMapViewport } from '../hooks/useMapViewport';
 import { FilterPanel } from './FilterPanel';
 import { DetailPanel } from './DetailPanel';
 import { ParcelPopup } from './ParcelPopup';
-import type { ParcelProperties, GeoJSONFeature } from '../utils/api';
+import { AssemblyPopup } from './AssemblyPopup';
+import { AssemblyDetailPanel } from './AssemblyDetailPanel';
+import type { ParcelProperties, GeoJSONFeature, AssemblyProperties } from '../utils/api';
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
 
@@ -26,17 +29,37 @@ export function MapView() {
   const { filters, updateFilter, resetFilters } = useFilters();
   const { data, isLoading, error } = useParcels(bbox, filters);
 
+  const [showAssembly, setShowAssembly] = useState(true);
+  const { data: assemblyData } = useAssemblyParcels(bbox, showAssembly);
+
   const [popupFeature, setPopupFeature] = useState<GeoJSONFeature | null>(null);
   const [popupLngLat, setPopupLngLat] = useState<[number, number] | null>(null);
   const [selectedParcel, setSelectedParcel] = useState<ParcelProperties | null>(null);
+  const [selectedAssembly, setSelectedAssembly] = useState<AssemblyProperties | null>(null);
+  const [assemblyPopupFeature, setAssemblyPopupFeature] = useState<{ properties: AssemblyProperties; lngLat: [number, number] } | null>(null);
 
   const onClick = useCallback((e: MapLayerMouseEvent) => {
     const feature = e.features?.[0];
     if (!feature) {
       setPopupFeature(null);
       setPopupLngLat(null);
+      setAssemblyPopupFeature(null);
       return;
     }
+
+    // Check if it's an assembly layer click
+    const layerId = (feature.layer as { id?: string })?.id;
+    if (layerId === 'assembly-fill' || layerId === 'assembly-points') {
+      setPopupFeature(null);
+      setPopupLngLat(null);
+      setAssemblyPopupFeature({
+        properties: feature.properties as unknown as AssemblyProperties,
+        lngLat: [e.lngLat.lng, e.lngLat.lat],
+      });
+      return;
+    }
+
+    setAssemblyPopupFeature(null);
     setPopupFeature(feature as unknown as GeoJSONFeature);
     setPopupLngLat([e.lngLat.lng, e.lngLat.lat]);
   }, []);
@@ -52,6 +75,29 @@ export function MapView() {
     })),
   };
 
+  // Assembly parcels — separate into polygons and points
+  const assemblyPolygons = {
+    type: 'FeatureCollection' as const,
+    features: (assemblyData?.features ?? [])
+      .filter(f => f.properties.geom_type === 'polygon')
+      .map(f => ({
+        type: 'Feature' as const,
+        geometry: f.geometry,
+        properties: { ...f.properties },
+      })),
+  };
+  const assemblyPoints = {
+    type: 'FeatureCollection' as const,
+    features: (assemblyData?.features ?? [])
+      .filter(f => f.properties.geom_type === 'point')
+      .map(f => ({
+        type: 'Feature' as const,
+        geometry: f.geometry,
+        properties: { ...f.properties },
+      })),
+  };
+  const assemblyCount = (assemblyData?.features?.length ?? 0);
+
   return (
     <div className="relative w-full h-full">
       <Map
@@ -61,7 +107,7 @@ export function MapView() {
         onMoveEnd={updateBbox}
         onLoad={updateBbox}
         onClick={onClick}
-        interactiveLayerIds={['parcels-fill']}
+        interactiveLayerIds={['parcels-fill', ...(showAssembly ? ['assembly-fill', 'assembly-points'] : [])]}
         mapStyle={MAP_STYLE}
         style={{ width: '100%', height: '100%' }}
       >
@@ -85,6 +131,43 @@ export function MapView() {
           />
         </Source>
 
+        {/* Assembly-zoned parcels — gold/amber overlay */}
+        {showAssembly && (
+          <>
+            <Source id="assembly-polygons" type="geojson" data={assemblyPolygons}>
+              <Layer
+                id="assembly-fill"
+                type="fill"
+                paint={{
+                  'fill-color': '#f59e0b',
+                  'fill-opacity': 0.55,
+                }}
+              />
+              <Layer
+                id="assembly-outline"
+                type="line"
+                paint={{
+                  'line-color': '#b45309',
+                  'line-width': 2,
+                  'line-opacity': 0.9,
+                }}
+              />
+            </Source>
+            <Source id="assembly-points" type="geojson" data={assemblyPoints}>
+              <Layer
+                id="assembly-points"
+                type="circle"
+                paint={{
+                  'circle-radius': 6,
+                  'circle-color': '#f59e0b',
+                  'circle-stroke-color': '#b45309',
+                  'circle-stroke-width': 2,
+                }}
+              />
+            </Source>
+          </>
+        )}
+
         {popupFeature && popupLngLat && (
           <Popup
             longitude={popupLngLat[0]}
@@ -104,6 +187,25 @@ export function MapView() {
             />
           </Popup>
         )}
+
+        {assemblyPopupFeature && (
+          <Popup
+            longitude={assemblyPopupFeature.lngLat[0]}
+            latitude={assemblyPopupFeature.lngLat[1]}
+            onClose={() => setAssemblyPopupFeature(null)}
+            closeButton
+            closeOnClick={false}
+            maxWidth="320px"
+          >
+            <AssemblyPopup
+              parcel={assemblyPopupFeature.properties}
+              onClick={() => {
+                setSelectedAssembly(assemblyPopupFeature.properties);
+                setAssemblyPopupFeature(null);
+              }}
+            />
+          </Popup>
+        )}
       </Map>
 
       <FilterPanel
@@ -111,12 +213,22 @@ export function MapView() {
         updateFilter={updateFilter}
         resetFilters={resetFilters}
         totalCount={data?.total_count || 0}
+        showAssembly={showAssembly}
+        onToggleAssembly={() => setShowAssembly(prev => !prev)}
+        assemblyCount={assemblyCount}
       />
 
       {selectedParcel && (
         <DetailPanel
           parcel={selectedParcel}
           onClose={() => setSelectedParcel(null)}
+        />
+      )}
+
+      {selectedAssembly && (
+        <AssemblyDetailPanel
+          parcel={selectedAssembly}
+          onClose={() => setSelectedAssembly(null)}
         />
       )}
 

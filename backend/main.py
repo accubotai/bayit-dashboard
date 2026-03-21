@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 
 from backend.config import settings
 from backend.db import close_pool, get_pool
-from backend.routers import auth, health, parcels, zones
+from backend.routers import assembly, auth, health, parcels, zones
 from backend.routers.auth import verify_token
 
 if typing.TYPE_CHECKING:
@@ -61,6 +61,7 @@ async def auth_middleware(request: Request, call_next):
     return await call_next(request)
 
 
+app.include_router(assembly.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(health.router, prefix="/api")
 app.include_router(parcels.router, prefix="/api")
