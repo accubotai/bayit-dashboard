@@ -20,13 +20,9 @@ import httpx
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    os.getenv(
-        "SUPABASE_DIRECT_URL",
-        "postgresql://user:password@localhost:5432/richmond_land",
-    ),
-)
+DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("SUPABASE_DIRECT_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL or SUPABASE_DIRECT_URL must be set as an environment variable.")
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 NOMINATIM_DELAY = 1.1
@@ -65,16 +61,14 @@ async def geocode(client: httpx.AsyncClient, address: str) -> dict | None:
                         "place_name": r.get("display_name", "").split(",")[0],
                     }
         except Exception:
-            pass
+            logger.debug("Geocode attempt failed for %s", variant)
         time.sleep(NOMINATIM_DELAY)
     return None
 
 
 async def main() -> None:
     conn = await asyncpg.connect(DATABASE_URL)
-    failed = await conn.fetch(
-        "SELECT id, address FROM assembly_candidates WHERE geom IS NULL"
-    )
+    failed = await conn.fetch("SELECT id, address FROM assembly_candidates WHERE geom IS NULL")
     logger.info("Found %d failed geocodes to retry", len(failed))
 
     updated = 0
@@ -90,10 +84,20 @@ async def main() -> None:
                         place_type = $4, place_name = $5
                     WHERE id = $1
                     """,
-                    row["id"], result["lat"], result["lng"],
-                    result["place_type"], result["place_name"],
+                    row["id"],
+                    result["lat"],
+                    result["lng"],
+                    result["place_type"],
+                    result["place_name"],
                 )
-                logger.info("[%d/%d] FIXED %s → (%.5f, %.5f)", i + 1, len(failed), row["address"], result["lat"], result["lng"])
+                logger.info(
+                    "[%d/%d] FIXED %s → (%.5f, %.5f)",
+                    i + 1,
+                    len(failed),
+                    row["address"],
+                    result["lat"],
+                    result["lng"],
+                )
                 updated += 1
             else:
                 logger.warning("[%d/%d] STILL FAILED %s", i + 1, len(failed), row["address"])
@@ -113,7 +117,8 @@ async def main() -> None:
     logger.info("Parcel matching: %s", result)
 
     stats = await conn.fetchrow(
-        "SELECT COUNT(*) as total, COUNT(geom) as geocoded, COUNT(matched_parcel_id) as matched FROM assembly_candidates"
+        "SELECT COUNT(*) as total, COUNT(geom) as geocoded,"
+        " COUNT(matched_parcel_id) as matched FROM assembly_candidates"
     )
     logger.info("Final: %d total, %d geocoded, %d matched", stats["total"], stats["geocoded"], stats["matched"])
     await conn.close()

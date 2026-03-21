@@ -10,20 +10,21 @@ from fastapi import APIRouter, HTTPException, Query
 
 from backend.config import validate_bbox
 from backend.db import SUPABASE_KEY, SUPABASE_URL, get_pool, use_rest
+from backend.models import AssemblyCollection, AssemblyFeature, AssemblyProperties
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["assembly"])
 
 
-@router.get("/assembly-parcels")
+@router.get("/assembly-parcels", response_model=AssemblyCollection)
 async def get_assembly_parcels(
     bbox: str = Query(
         ...,
         description="Bounding box: min_lng,min_lat,max_lng,max_lat",
         pattern=r"^-?\d+\.?\d*,-?\d+\.?\d*,-?\d+\.?\d*,-?\d+\.?\d*$",
     ),
-) -> dict:
+) -> AssemblyCollection:
     """Return assembly-zoned parcels within a bounding box as GeoJSON."""
     parts = bbox.split(",")
     min_lng, min_lat, max_lng, max_lat = (float(p) for p in parts)
@@ -51,30 +52,27 @@ async def get_assembly_parcels(
         if isinstance(geojson, str):
             geojson = json.loads(geojson)
 
-        features.append({
-            "type": "Feature",
-            "geometry": geojson,
-            "properties": {
-                "id": row["id"],
-                "pid": row.get("pid"),
-                "civic_address": row.get("civic_address"),
-                "address": row.get("address"),
-                "zoning": row.get("zoning"),
-                "owner_type": row.get("owner_type"),
-                "lot_area_sqm": float(row["lot_area_sqm"]) if row.get("lot_area_sqm") else None,
-                "owner_name": row.get("owner_name"),
-                "place_type": row.get("place_type"),
-                "place_name": row.get("place_name"),
-                "in_alr": row.get("in_alr"),
-                "geom_type": row.get("geom_type"),
-            },
-        })
+        features.append(
+            AssemblyFeature(
+                geometry=geojson,
+                properties=AssemblyProperties(
+                    id=row["id"],
+                    pid=row.get("pid"),
+                    civic_address=row.get("civic_address"),
+                    address=row.get("address"),
+                    zoning=row.get("zoning"),
+                    owner_type=row.get("owner_type"),
+                    lot_area_sqm=float(row["lot_area_sqm"]) if row.get("lot_area_sqm") else None,
+                    owner_name=row.get("owner_name"),
+                    place_type=row.get("place_type"),
+                    place_name=row.get("place_name"),
+                    in_alr=row.get("in_alr"),
+                    geom_type=row.get("geom_type"),
+                ),
+            )
+        )
 
-    return {
-        "type": "FeatureCollection",
-        "features": features,
-        "total_count": len(features),
-    }
+    return AssemblyCollection(type="FeatureCollection", features=features, total_count=len(features))
 
 
 async def _fetch_via_rest(params: dict) -> list[dict]:

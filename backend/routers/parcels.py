@@ -63,7 +63,7 @@ async def get_parcels(
     hide_private: bool = Query(False, description="Hide private parcels without listings"),
     min_lot_area: float | None = Query(None, ge=0, description="Minimum lot area in m²"),
     max_lot_area: float | None = Query(None, ge=0, description="Maximum lot area in m²"),
-    exclude_parks: bool = Query(False, description="Exclude public parks"),
+    exclude_unusable: bool = Query(False, description="Exclude unusable parcels (parks, schools, etc.)"),
 ) -> ParcelCollection:
     """Return enriched parcels within a bounding box as GeoJSON FeatureCollection."""
     parts = bbox.split(",")
@@ -85,7 +85,7 @@ async def get_parcels(
         "hide_private": hide_private,
         "min_lot_area": min_lot_area,
         "max_lot_area": max_lot_area,
-        "exclude_parks": exclude_parks,
+        "exclude_unusable": exclude_unusable,
     }
 
     if use_rest():
@@ -112,7 +112,7 @@ async def _fetch_via_rest(params: dict) -> list[dict]:
         "p_hide_private": params["hide_private"],
         "p_min_lot_area": params["min_lot_area"],
         "p_max_lot_area": params["max_lot_area"],
-        "p_exclude_unusable": params["exclude_parks"],
+        "p_exclude_unusable": params["exclude_unusable"],
     }
     headers = {
         "apikey": SUPABASE_KEY,
@@ -147,6 +147,6 @@ async def _fetch_via_asyncpg(params: dict) -> list[dict]:
         params["hide_private"],
         params["min_lot_area"],
         params["max_lot_area"],
-        params["exclude_parks"],
+        params["exclude_unusable"],
     )
     return [dict(row) for row in rows]

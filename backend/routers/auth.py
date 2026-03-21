@@ -15,7 +15,7 @@ router = APIRouter(tags=["auth"])
 # Stored as "salt:hash" in env var
 _CREDENTIAL_HASH = os.getenv("DASHBOARD_PASSWORD_HASH", "")
 _DASHBOARD_USER = os.getenv("DASHBOARD_USER", "bayit")
-_TOKEN_SECRET = os.getenv("TOKEN_SECRET", "bayit-dashboard-dev-secret")
+_TOKEN_SECRET = os.getenv("TOKEN_SECRET", "")
 
 
 class LoginRequest(BaseModel):
@@ -26,11 +26,11 @@ class LoginRequest(BaseModel):
 
 
 def _verify_password(password: str) -> bool:
-    """Verify password against stored salt:hash."""
+    """Verify password against stored salt:hash using PBKDF2."""
     if not _CREDENTIAL_HASH or ":" not in _CREDENTIAL_HASH:
         return False
     salt, stored_hash = _CREDENTIAL_HASH.split(":", 1)
-    computed = hashlib.sha256((salt + password).encode()).hexdigest()
+    computed = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 100000).hex()
     return hmac.compare_digest(computed, stored_hash)
 
 
@@ -38,7 +38,7 @@ def _create_token(username: str) -> str:
     """Create a signed session token (username:timestamp:signature)."""
     ts = str(int(time.time()))
     payload = f"{username}:{ts}"
-    sig = hmac.new(_TOKEN_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()[:32]
+    sig = hmac.new(_TOKEN_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}:{sig}"
 
 
@@ -52,7 +52,7 @@ def verify_token(token: str) -> bool:
     username, ts_str, sig = parts
     # Check signature
     payload = f"{username}:{ts_str}"
-    expected = hmac.new(_TOKEN_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()[:32]
+    expected = hmac.new(_TOKEN_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(sig, expected):
         return False
     # Check expiry (24 hours)
