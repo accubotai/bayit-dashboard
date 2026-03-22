@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     supabase_db_user: str = ""
     supabase_db_password: str = ""
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     @property
     def db_url(self) -> str:
