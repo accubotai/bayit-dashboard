@@ -29,6 +29,16 @@ class Settings(BaseSettings):
     supabase_db_name: str = "postgres"
     supabase_db_user: str = ""
     supabase_db_password: str = ""
+    supabase_direct_url: str = ""
+
+    # Auth
+    dashboard_password_hash: str = ""
+    dashboard_user: str = "bayit"
+    token_secret: str = ""
+
+    # Vercel (injected by platform, not used in app code)
+    vercel_token: str = ""
+    vercel_org_id: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
